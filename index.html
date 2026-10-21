@@ -106,7 +106,7 @@ function nm(c,l=S.lang){const k=l+c;if(nmCache[k])return nmCache[k];let v=c;
   return nmCache[k]=v}
 
 /* ---------- sound ---------- */
-const AU={on:false,ctx:null,blip:0};
+const AU={on:true,ctx:null,blip:0}; /* sound is ON by default */
 function actx(){if(!AU.ctx){try{AU.ctx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}return AU.ctx}
 /* keep audio alive in WebView / kiosk browsers: resume the context after any touch, tab return, or system suspend */
 const unlockAudio=()=>{const c=AU.ctx;if(c&&c.state!=='running'&&c.resume)c.resume().catch(()=>{})};
@@ -168,7 +168,10 @@ function bgStart(){const a=actx();if(!a)return;if(a.resume)a.resume();
   BGM.on=true;BGM.step=0;BGM.next=a.currentTime+.1;clearInterval(BGM.timer);BGM.timer=setInterval(bgSchedule,70);bgSchedule()}
 function bgStop(){BGM.on=false;clearInterval(BGM.timer);BGM.timer=null;const a=AU.ctx;
   if(a&&BGM.master){BGM.master.gain.cancelScheduledValues(a.currentTime);BGM.master.gain.setTargetAtTime(0,a.currentTime,.03)}}
-$('soundBtn').onclick=()=>{AU.on=!AU.on;if(AU.on){const a=actx();if(a&&a.resume)a.resume();tone(660,.15,'triangle',.07);tone(990,.2,'triangle',.07,.1);bgStart()}else{bgStop();try{speechSynthesis.cancel()}catch(e){}}};
+let firstTap=true,tapWasFirst=false;
+document.addEventListener('click',()=>{tapWasFirst=firstTap;firstTap=false;if(tapWasFirst&&AU.on){const a=actx();if(a&&a.resume)a.resume().catch(()=>{});bgStart()}},true);
+$('soundBtn').onclick=()=>{if(tapWasFirst&&AU.on)return;AU.on=!AU.on;if(AU.on){const a=actx();if(a&&a.resume)a.resume();tone(660,.15,'triangle',.07);tone(990,.2,'triangle',.07,.1);bgStart()}else{bgStop();try{speechSynthesis.cancel()}catch(e){}}};
+bgStart(); /* start music right away; if the browser blocks autoplay it begins on the first tap/click */
 
 /* ---------- images ---------- */
 const IMG={};let loaded=0;
